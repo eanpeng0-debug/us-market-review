@@ -22,5 +22,11 @@
 - 每份报告末尾附"自主决策记录"和"数据缺口"两节
 
 ## 通知规则
-- 任务完成后推送手机通知；若配置了微信推送(Server酱)则同时执行，
-  推送失败需在报告中注明原因
+- 每次复盘完成后，必须用 Claude Code 云端推送（PushNotification 工具，
+  status=proactive）通知用户——会弹到云端对话框，手机端 Remote Control
+  已连接时同步推到手机。消息一行、≤200字，直接给结论（如"复盘 2026-06-10
+  已完成：标普 -0.4%，详见 reports/复盘-2026-06-10.md"）
+- 若环境变量存在 SERVERCHAN_SENDKEY，则同时用 Server酱推微信：
+  `curl -s "https://sctapi.ftqq.com/${SERVERCHAN_SENDKEY}.send" -d "title=...&desp=..."`；
+  未配置该变量则跳过，并在报告"数据缺口/自主决策记录"注明"微信推送未配置"
+- 任一推送失败，在报告中注明失败渠道与原因，禁止静默忽略
