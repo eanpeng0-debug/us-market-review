@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>USAR 论文模式监控</title>
+  <style>
+    :root {
+      --green:#1f9d55; --amber:#d97706; --red:#dc2626; --blue:#2563eb;
+      --bg:#0f172a; --card:#1e293b; --line:#334155; --txt:#e2e8f0; --muted:#94a3b8;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--txt);
+           font-family:-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif; }
+    .wrap { max-width:760px; margin:24px auto; padding:0 16px; }
+    .card { position:relative; background:var(--card); border:1px solid var(--line);
+            border-radius:14px; padding:20px; overflow:hidden; }
+
+    /* 非实时水印 */
+    .watermark { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-24deg);
+                 font-size:64px; font-weight:800; color:rgba(148,163,184,.08);
+                 white-space:nowrap; pointer-events:none; user-select:none; z-index:0; }
+    .card > * { position:relative; z-index:1; }
+
+    .hd { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    .ticker { font-size:22px; font-weight:800; letter-spacing:.5px; }
+    .ticker small { color:var(--muted); font-weight:500; font-size:13px; margin-left:8px; }
+
+    .verdict { display:inline-flex; align-items:center; gap:8px; font-size:20px; font-weight:800;
+               padding:8px 16px; border-radius:10px; }
+    .verdict .dot { width:12px; height:12px; border-radius:50%; }
+    .green  { color:#bbf7d0; background:rgba(31,157,85,.18);  } .green  .dot{background:var(--green);}
+    .amber  { color:#fde68a; background:rgba(217,119,6,.18);  } .amber  .dot{background:var(--amber);}
+    .red    { color:#fecaca; background:rgba(220,38,38,.18);  } .red    .dot{background:var(--red);}
+    .blue   { color:#bfdbfe; background:rgba(37,99,235,.18);  } .blue   .dot{background:var(--blue);}
+
+    .reason { color:var(--muted); font-size:13px; margin:6px 0 16px; }
+
+    /* T3 前置条件红框置顶 */
+    .t3 { border:2px solid var(--red); background:rgba(220,38,38,.08);
+          border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+    .t3.passed { border-color:var(--green); background:rgba(31,157,85,.08); }
+    .t3 .lab { font-weight:700; font-size:14px; }
+    .t3 .desc { color:var(--muted); font-size:12px; margin-top:4px; }
+    .t3 .st { float:right; font-weight:800; font-size:13px; padding:2px 10px; border-radius:999px; }
+    .st-pass { color:#bbf7d0; background:rgba(31,157,85,.22); }
+    .st-fail { color:#fecaca; background:rgba(220,38,38,.25); }
+
+    /* 独立触发器徽章 */
+    .badges { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+    .badge { flex:1 1 120px; min-width:120px; border:1px solid var(--line); border-radius:10px;
+             padding:10px 12px; background:#0b1220; }
+    .badge .k { font-weight:700; font-size:13px; }
+    .badge .v { font-weight:800; font-size:12px; padding:1px 8px; border-radius:999px; float:right; }
+    .badge .d { color:var(--muted); font-size:11px; margin-top:4px; line-height:1.4; }
+    .badge.na { opacity:.5; }
+
+    .sec { margin:18px 0; }
+    .sec h3 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);
+              margin:0 0 10px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+
+    .entry { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .price { font-size:30px; font-weight:800; }
+    .arrow { color:var(--muted); font-size:22px; }
+    .action { font-size:16px; font-weight:800; padding:8px 14px; border-radius:10px; }
+    .entry-detail { color:var(--muted); font-size:13px; width:100%; margin-top:6px; }
+
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; }
+    td.num { font-variant-numeric:tabular-nums; font-weight:700; text-align:right; }
+
+    .pos { display:flex; gap:10px; flex-wrap:wrap; }
+    .chip { border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-size:13px;
+            font-weight:600; background:#0b1220; }
+    .chip.warn { border-color:var(--amber); color:#fde68a; }
+
+    .alert { border:2px solid var(--red); background:rgba(220,38,38,.14); color:#fecaca;
+             border-radius:10px; padding:12px 14px; margin-bottom:14px; font-weight:600; font-size:13px; }
+
+    .foot { margin-top:18px; padding-top:12px; border-top:1px solid var(--line);
+            color:var(--muted); font-size:12px; line-height:1.7; }
+    .foot .nrt { display:inline-block; font-weight:800; color:#fde68a;
+                 border:1px solid var(--amber); border-radius:6px; padding:1px 8px; margin-right:6px; }
+    .src a { color:#7dd3fc; text-decoration:none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="watermark">非实时 · NOT REALTIME</div>
+
+    <!-- 顶部:论文裁决 -->
+    <div class="hd">
+      <div class="ticker">{{ s.meta.ticker }}<small>{{ s.meta.name }} · {{ s.meta.exchange }}</small></div>
+      <div class="verdict {{ s.thesis.color }}"><span class="dot"></span>{{ s.thesis.verdict }}</div>
+    </div>
+    <div class="reason">{{ s.thesis.reason }}</div>
+
+    <!-- 数据矛盾红条 -->
+    {% if s.data.conflict %}
+      <div class="alert">⚠ 数据矛盾:{{ s.data.conflict_detail }}</div>
+    {% endif %}
+
+    <!-- T3 前置条件红框置顶 -->
+    {% set t3 = s.fundamental_triggers.T3_precondition %}
+    <div class="t3 {{ 'passed' if t3.status == 'passed' else 'failed' }}">
+      <span class="st {{ 'st-pass' if t3.status == 'passed' else 'st-fail' }}">{{ t3.status|upper }}</span>
+      <div class="lab">{{ t3.label }}</div>
+      <div class="desc">{{ t3.desc }}</div>
+    </div>
+
+    <!-- T1/T2/T4 独立徽章 -->
+    <div class="badges">
+      {% for k in ['T1','T2','T4'] %}
+        {% set t = s.fundamental_triggers[k] %}
+        {% set disabled = s.thesis.triggers is none %}
+        <div class="badge {{ 'na' if disabled }}">
+          <span class="v {{ 'st-pass' if t.status == 'passed' else 'st-fail' }}">{{ t.status|upper }}</span>
+          <div class="k">{{ t.label }}</div>
+          <div class="d">{{ t.desc }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- 进场建议 -->
+    <div class="sec">
+      <h3>进场建议</h3>
+      <div class="entry">
+        <span class="price">${{ '%.2f'|format(s.price) }}</span>
+        <span class="arrow">→</span>
+        <span class="action {{ s.entry.color }}">
+          {{ s.entry.action }}{% if s.entry.tier %} · {{ s.entry.tier }}{% endif %}{% if s.entry.limit is defined and s.entry.limit %} · 限价 {{ s.entry.limit }}{% endif %}{% if s.entry.alloc is defined and s.entry.alloc %} · {{ s.entry.alloc }}%{% endif %}
+        </span>
+        <div class="entry-detail">{{ s.entry.reason }}{% if s.entry.note %} — {{ s.entry.note }}{% endif %}</div>
+      </div>
+    </div>
+
+    <!-- 关键位表 -->
+    <div class="sec">
+      <h3>关键位</h3>
+      <table>
+        <tr><th>层级</th><th style="text-align:right">价位</th><th>含义</th></tr>
+        <tr><td>支撑</td><td class="num">{{ s.key_levels.support }}</td><td>放量跌破 → 破位否决</td></tr>
+        <tr><td>博弈</td><td class="num">{{ s.key_levels.game }}</td><td>多空博弈关口</td></tr>
+        <tr><td>阻力</td><td class="num">{{ s.key_levels.resistance }}</td><td>放量突破 → 追储备</td></tr>
+      </table>
+    </div>
+
+    <!-- 仓位上限 -->
+    <div class="sec">
+      <h3>仓位上限</h3>
+      <div class="pos">
+        <span class="chip">现金仓位 (cash only)</span>
+        <span class="chip warn">单票 ≤ {{ s.position_cap.max_pct }}%</span>
+        <span class="chip warn">禁止融资 (no margin)</span>
+      </div>
+    </div>
+
+    <!-- 页脚:数据日期 + 非实时 -->
+    <div class="foot">
+      <div><span class="nrt">非实时</span>数据日期 {{ s.data.date }}
+        · 采集 {{ s.data.captured_at_utc }}
+        {% if s.data.market_note %}· {{ s.data.market_note }}{% endif %}</div>
+      <div>{{ s.data.disclaimer }}</div>
+      <div class="src">数据源(双源交叉验证):
+        {% for src in s.data.sources %}
+          <a href="{{ src.url }}" target="_blank" rel="noopener">{{ src.name }}</a>{% if src.price %} ${{ '%.2f'|format(src.price) }}{% endif %}{% if not loop.last %} · {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

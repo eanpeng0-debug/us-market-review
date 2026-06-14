@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "ticker": "USAR",
+    "name": "USA Rare Earth, Inc.",
+    "exchange": "NASDAQ",
+    "thesis": "USAR 中长期论文持仓监控 (thesis-mode)",
+    "data_governance": "T1/T2/T3/T4 基本面触发器状态人工维护;代码绝不自动修改。",
+    "last_reviewed": "2026-06-14",
+    "reviewed_by": "manual"
+  },
+
+  "fundamental_triggers": {
+    "T3_precondition": {
+      "role": "precondition_veto",
+      "label": "T3 前置条件 / 一票否决",
+      "desc": "商务部资金到位(战略资金前置条件)。失败=论文根基塌陷,直接 EXIT。",
+      "status": "passed",
+      "_status_options": ["passed", "failed"],
+      "last_checked": "2026-06-14"
+    },
+    "T1": {
+      "role": "independent_trigger",
+      "label": "T1 独立触发器",
+      "desc": "磁体产能 / 量产爬坡里程碑(独立布尔,不进总分)。",
+      "status": "passed",
+      "_status_options": ["passed", "failed"],
+      "last_checked": "2026-06-14"
+    },
+    "T2": {
+      "role": "independent_trigger",
+      "label": "T2 独立触发器",
+      "desc": "长期承购 / 客户订单合同(独立布尔,不进总分)。",
+      "status": "passed",
+      "_status_options": ["passed", "failed"],
+      "last_checked": "2026-06-14"
+    },
+    "T4": {
+      "role": "independent_trigger",
+      "label": "T4 独立触发器",
+      "desc": "上游矿源 / 原料保障(独立布尔,不进总分)。",
+      "status": "passed",
+      "_status_options": ["passed", "failed"],
+      "last_checked": "2026-06-14"
+    }
+  },
+
+  "entry_tiers": [
+    {
+      "id": "B1",
+      "label": "首批 B1",
+      "trigger_max": 20.5,
+      "limit": 20.5,
+      "alloc_pct": 2.0,
+      "note": "回落≤20.5 触发首批"
+    },
+    {
+      "id": "B2",
+      "label": "二批 B2",
+      "trigger_max": 18.6,
+      "limit": 18.6,
+      "alloc_pct": 2.0,
+      "note": "深跌≤18.6 触发二批"
+    }
+  ],
+
+  "add_veto": {
+    "price": 18.2,
+    "desc": "放量跌破 18.2 视为破位 → STOP,不接飞刀(优先于批次触发)。"
+  },
+
+  "breakout": {
+    "price": 24.2,
+    "reserve_pct": 1.0,
+    "desc": "放量突破 24.2 → 考虑动用储备(约总仓位 20%)追突破。"
+  },
+
+  "key_levels": {
+    "support": 18.2,
+    "game": 22.16,
+    "resistance": 24.2,
+    "air_zone_note": "价在空中 (18.6 ~ 24.2):R/R 差,不接。"
+  },
+
+  "position_cap": {
+    "cash_only": true,
+    "max_pct": 5,
+    "no_margin": true,
+    "note": "现金仓位;单票上限 ≤5%;禁止融资 (no margin)。"
+  },
+
+  "data_policy": {
+    "live_price_source": "web_search (双源交叉验证)",
+    "realtime": false,
+    "disclaimer": "web_search 非秒级实时,仅供参考,实际以券商 app 为准。",
+    "conflict_tolerance_pct": 1.0
+  }
+}
